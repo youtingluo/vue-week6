@@ -13,6 +13,9 @@
             <li class="nav-item">
                 <router-link class="nav-link" to="/cart">購物車列表</router-link>
             </li>
+            <li class="nav-item">
+                <router-link class="nav-link" to="/login">登入後台</router-link>
+            </li>
           </ul>
         </div>
       </div>
