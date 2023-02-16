@@ -52,6 +52,10 @@ export default {
           this.products = res.data.products
           this.isLoading = false
         })
+        .catch(() => {
+          this.isLoading = false
+          this.$router.push('/login')
+        })
     }
   },
   mounted () {
