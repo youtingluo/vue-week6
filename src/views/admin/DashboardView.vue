@@ -15,7 +15,7 @@
       </div>
     </nav>
     <div class="container mt-3">
-      <router-view />
+      <router-view v-if="status" />
     </div>
   </div>
 </template>
@@ -23,6 +23,11 @@
 <script>
 const { VITE_PATH } = import.meta.env
 export default {
+  data () {
+    return {
+      status: false
+    }
+  },
   methods: {
     checkLogin () {
       const cookieValue = document.cookie
@@ -33,6 +38,7 @@ export default {
       this.$http.post(`${VITE_PATH}/v2/api/user/check`)
         .then((res) => {
           if (res.data.success) {
+            this.status = true
             this.$router.push('/admin/products')
           }
         })

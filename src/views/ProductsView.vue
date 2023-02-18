@@ -35,7 +35,8 @@
           <td>
             <div class="btn-group btn-group-sm">
               <router-link class="btn btn-outline-secondary" :to="`/product/${product.id}`">產品細節</router-link>
-              <button type="button" class="btn btn-outline-danger" @click="addToCart(product.id)">
+              <button type="button" class="btn btn-outline-danger" :disabled="isActive"
+              @click="addToCart(product.id)">
                 <i class="spinner-border spinner-border-sm" v-if="isActive"></i>
                 加到購物車
               </button>
@@ -88,8 +89,8 @@ export default {
       this.$http.post(`${VITE_PATH}/v2/api/${VITE_USER}/cart`, { data })
         .then(() => {
           this.getCart()
-          alert('已加入購物車')
           this.isActive = false
+          alert('已加入購物車')
         })
         .catch(err => {
           alert(err.data.message)

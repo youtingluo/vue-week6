@@ -1,65 +1,181 @@
 <template>
   <div>
     <loading :active="isLoading" />
-    後台產品列表
-    <table class="table align-middle">
+    <div class="text-end mt-4">
+      <button class="btn btn-primary" @click="openProductModal(true)">
+        建立新的產品
+      </button>
+    </div>
+    <h2>產品列表</h2>
+    <table class="table table-hover mt-4">
       <thead>
         <tr>
-          <th>商品名稱</th>
-          <th>原價</th>
-          <th>售價</th>
-          <th>是否啟用</th>
+          <th width="150">產品名稱</th>
+          <th width="120">原價</th>
+          <th width="120">售價</th>
+          <th width="150">是否啟用</th>
+          <th width="120">編輯產品</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="product in products" :key="product.id">
-          <td>{{ product.title }}</td>
-          <td>
-            {{ product.origin_price }} 元
-          </td>
-          <td>
-            {{ product.price }} 元
-          </td>
+          <td width="150">{{ product.title }}</td>
+          <td width="120">{{ product.origin_price }}</td>
+          <td width="120">{{ product.price }}</td>
           <td width="150">
             <span v-if="product.is_enabled" class="text-success">啟用</span>
             <span v-else>未啟用</span>
           </td>
+          <td width="120">
+            <div
+              class="btn-group"
+              role="group"
+              aria-label="Basic mixed styles example"
+            >
+              <button
+                type="button"
+                class="btn btn-secondary"
+                @click="openProductModal(false, product)"
+              >
+                編輯
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline-danger"
+                @click="openRemoveModal(product)"
+              >
+                刪除
+              </button>
+            </div>
+          </td>
         </tr>
       </tbody>
-  </table>
+    </table>
+    <p>
+      目前有 <span>{{ products.length }}</span> 項產品
+    </p>
+    <div class="d-flex justify-content-center">
+      <Pagination
+        :pagination="pagination"
+        @emit-page="getProducts"
+      ></Pagination>
+    </div>
+  </div>
+
+  <!-- Product Modal -->
+  <div
+    id="productModal"
+    ref="productModal"
+    class="modal fade"
+    tabindex="-1"
+    aria-labelledby="productModalLabel"
+    aria-hidden="true"
+  >
+    <ProductModal
+      :isNew="isNew"
+      :product="tempProduct"
+      @update="updateProduct"
+    >
+    </ProductModal>
+  </div>
+  <!-- del Modal -->
+  <div
+    id="delProductModal"
+    ref="delProductModal"
+    class="modal fade"
+    tabindex="-1"
+    aria-labelledby="delProductModalLabel"
+    aria-hidden="true"
+  >
+    <DelModal :product="tempProduct" @remove-product="removeProduct"></DelModal>
   </div>
 </template>
 
 <script>
 import Loading from 'vue-loading-overlay'
+import DelModal from '../../components/DeleteModal.vue'
+import ProductModal from '../../components/ProductModal.vue'
+import Pagination from '../../components/PaginationComponent.vue'
 import 'vue-loading-overlay/dist/css/index.css'
+import Modal from 'bootstrap/js/dist/modal'
 const { VITE_USER, VITE_PATH } = import.meta.env
 export default {
   data () {
     return {
       isLoading: false,
-      products: []
+      products: [],
+      bsModal: '',
+      isNew: true,
+      tempProduct: {},
+      pagination: {}
     }
   },
   components: {
-    Loading
+    Loading,
+    DelModal,
+    ProductModal,
+    Pagination
   },
   methods: {
-    getProducts () {
+    getProducts (page = 1) {
       this.isLoading = true
-      this.$http.get(`${VITE_PATH}/v2/api/${VITE_USER}/admin/products/all`)
+      this.$http.get(`${VITE_PATH}/v2/api/${VITE_USER}/admin/products?page=${page}`)
         .then(res => {
           this.products = res.data.products
+          this.pagination = res.data.pagination
           this.isLoading = false
         })
         .catch(() => {
           this.isLoading = false
           this.$router.push('/login')
         })
+    },
+    openProductModal (isNew, product) {
+      if (isNew) {
+        this.tempProduct = {}
+        this.isNew = true
+      } else {
+        this.tempProduct = { ...product }
+        this.isNew = false
+      }
+      this.bsModal = new Modal(this.$refs.productModal)
+      this.bsModal.show()
+    },
+    updateProduct () {
+      let api = `${VITE_PATH}/api/${VITE_USER}/admin/product`
+      let method = 'post'
+      if (!this.isNew) {
+        api = `${VITE_PATH}/api/${VITE_USER}/admin/product/${this.tempProduct.id}`
+        method = 'put'
+      }
+      this.$http[method](api, { data: this.tempProduct })
+        .then(() => {
+          this.getProducts()
+        })
+        .catch((err) => {
+          alert(err.message)
+        })
+      this.bsModal.hide()
+    },
+    openRemoveModal (item) {
+      this.tempProduct = { ...item }
+      this.bsModal = new Modal(this.$refs.delProductModal)
+      this.bsModal.show()
+    },
+    removeProduct () {
+      this.$http.delete(`${VITE_PATH}/api/${VITE_USER}/admin/product/${this.tempProduct.id}`)
+        .then(() => {
+          this.getProducts()
+        })
+        .catch((err) => {
+          alert(err.message)
+        })
+      this.bsModal.hide()
     }
   },
   mounted () {
     this.getProducts()
+    this.bsModal = new Modal(this.$refs.productModal)
   }
 }
 </script>
