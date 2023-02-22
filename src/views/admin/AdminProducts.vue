@@ -2,7 +2,7 @@
   <div>
     <loading :active="isLoading" />
     <div class="text-end mt-4">
-      <button class="btn btn-primary" @click="openProductModal(true)">
+      <button class="btn btn-primary" data-bs-target="#productModal" @click="openProductModal(true)">
         建立新的產品
       </button>
     </div>
@@ -63,32 +63,15 @@
   </div>
 
   <!-- Product Modal -->
-  <div
-    id="productModal"
-    ref="productModal"
-    class="modal fade"
-    tabindex="-1"
-    aria-labelledby="productModalLabel"
-    aria-hidden="true"
-  >
     <ProductModal
       :isNew="isNew"
       :product="tempProduct"
       @update="updateProduct"
+      ref="productModal"
     >
     </ProductModal>
-  </div>
   <!-- del Modal -->
-  <div
-    id="delProductModal"
-    ref="delProductModal"
-    class="modal fade"
-    tabindex="-1"
-    aria-labelledby="delProductModalLabel"
-    aria-hidden="true"
-  >
-    <DelModal :product="tempProduct" @remove-product="removeProduct"></DelModal>
-  </div>
+  <DelModal :product="tempProduct" @remove-item="removeProduct" ref="delModal"></DelModal>
 </template>
 
 <script>
@@ -97,7 +80,6 @@ import DelModal from '../../components/DeleteModal.vue'
 import ProductModal from '../../components/ProductModal.vue'
 import Pagination from '../../components/PaginationComponent.vue'
 import 'vue-loading-overlay/dist/css/index.css'
-import Modal from 'bootstrap/js/dist/modal'
 const { VITE_USER, VITE_PATH } = import.meta.env
 export default {
   data () {
@@ -138,8 +120,8 @@ export default {
         this.tempProduct = { ...product }
         this.isNew = false
       }
-      this.bsModal = new Modal(this.$refs.productModal)
-      this.bsModal.show()
+      this.bsModal = this.$refs.productModal
+      this.bsModal.openModal()
     },
     updateProduct () {
       let api = `${VITE_PATH}/api/${VITE_USER}/admin/product`
@@ -155,12 +137,12 @@ export default {
         .catch((err) => {
           alert(err.message)
         })
-      this.bsModal.hide()
+      this.bsModal.hideModal()
     },
     openRemoveModal (item) {
       this.tempProduct = { ...item }
-      this.bsModal = new Modal(this.$refs.delProductModal)
-      this.bsModal.show()
+      this.bsModal = this.$refs.delModal
+      this.bsModal.openModal()
     },
     removeProduct () {
       this.$http.delete(`${VITE_PATH}/api/${VITE_USER}/admin/product/${this.tempProduct.id}`)
@@ -170,12 +152,11 @@ export default {
         .catch((err) => {
           alert(err.message)
         })
-      this.bsModal.hide()
+      this.bsModal.hideModal()
     }
   },
   mounted () {
     this.getProducts()
-    this.bsModal = new Modal(this.$refs.productModal)
   }
 }
 </script>

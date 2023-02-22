@@ -1,9 +1,19 @@
 <template>
+  <div
+    id="productModal"
+    ref="modal"
+    class="modal fade"
+    tabindex="-1"
+    aria-labelledby="productModalLabel"
+    aria-hidden="true"
+    data-bs-backdrop="static"
+  >
   <div class="modal-dialog modal-xl">
     <div class="modal-content border-0">
       <div class="modal-header bg-dark text-white">
         <h5 id="productModalLabel" class="modal-title">
-          <span>新增產品</span>
+          <span v-if="isNew">新增產品</span>
+          <span v-else>編輯產品</span>
         </h5>
         <button
           type="button"
@@ -23,11 +33,64 @@
                 <input
                   type="text"
                   class="form-control"
+                  id="imageUrl"
                   placeholder="請輸入圖片連結"
                   v-model="tempProduct.imageUrl"
                 />
               </div>
+              <div class="mb-3">
+                <label for="customFile" class="form-label"
+                  >或 上傳圖片
+                  <span v-if="uploading" class="spinner-border spinner-border-sm" role="status"
+                  aria-hidden="true"></span>
+                </label>
+                <input
+                  :disabled="uploading"
+                  type="file"
+                  id="customFile"
+                  class="form-control"
+                  ref="fileInput"
+                  @change="uploadImage"
+                />
+              </div>
               <img class="img-fluid" :src="tempProduct.imageUrl"/>
+              <div class="mt-1" v-if="tempProduct.imagesUrl">
+                <div
+                  v-for="(image, key) in tempProduct.imagesUrl"
+                  class="mb-3"
+                  :key="key"
+                >
+                  <input
+                    type="url"
+                    class="form-control"
+                    v-model="tempProduct.imagesUrl[key]"
+                    placeholder="請輸入連結"
+                  />
+                  <div>
+                    <img class="img-fluid" :src="image" />
+                  </div>
+                  <button
+                    type="button"
+                    class="btn btn-outline-danger d-block w-100 mt-1"
+                    @click="tempProduct.imagesUrl.splice(key, 1)"
+                  >
+                    移除
+                  </button>
+                </div>
+                <div
+                  v-if="
+                    tempProduct.imagesUrl[tempProduct.imagesUrl.length - 1] ||
+                    !tempProduct.imagesUrl.length
+                  "
+                >
+                  <button
+                    class="btn btn-outline-primary btn-sm d-block w-100"
+                    @click="tempProduct.imagesUrl.push('')"
+                  >
+                    新增圖片
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
           <div class="col-sm-8">
@@ -141,23 +204,58 @@
       </div>
     </div>
   </div>
+  </div>
 </template>
 
 <script>
+import Modal from 'bootstrap/js/dist/modal'
+const { VITE_USER, VITE_PATH } = import.meta.env
 export default {
-  props: ['product'],
+  props: ['isNew', 'product'],
   data () {
     return {
-      tempProduct: {}
+      tempProduct: {},
+      uploading: false
     }
   },
   watch: {
     product () {
       this.tempProduct = this.product
+      if (!this.tempProduct.imagesUrl) {
+        this.tempProduct.imagesUrl = []
+      }
+      if (!this.tempProduct.imageUrl) {
+        this.tempProduct.imageUrl = ''
+      }
+    }
+  },
+  methods: {
+    uploadImage () {
+      const file = this.$refs.fileInput.files[0]
+      const formData = new FormData()
+      this.uploading = true
+      formData.append('file-to-upload', file)
+      this.$http.post(`${VITE_PATH}/v2/api/${VITE_USER}/admin/upload`, formData)
+        .then(res => {
+          this.tempProduct.imageUrl = res.data.imageUrl
+          this.$refs.fileInput.value = ''
+          this.uploading = false
+        })
+        .catch(err => {
+          alert(err.response.message)
+          this.$refs.fileInput.value = ''
+          this.uploading = false
+        })
+    },
+    openModal () {
+      this.modal.show()
+    },
+    hideModal () {
+      this.modal.hide()
     }
   },
   mounted () {
-    console.log(this.product)
+    this.modal = new Modal(this.$refs.modal)
   }
 }
 </script>
